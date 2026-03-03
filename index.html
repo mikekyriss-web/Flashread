@@ -10,47 +10,41 @@
 <title>FlashRead</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.10.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/blazeface@0.0.7/dist/blazeface.min.js"></script>
 <style>
-:root{
-  --bg:#0a0a0f;--surf:#111118;--brd:#1e1e2e;
-  --acc:#e8ff47;--teal:#47ffe8;--txt:#f0f0f0;
-  --mut:#555570;--red:#ff4757;--purple:#a855f7;
-  --ws:clamp(2.6rem,8vw,5rem);
-  --safe-top:env(safe-area-inset-top,0px);
-  --safe-bot:env(safe-area-inset-bottom,0px);
-}
+:root{--bg:#0a0a0f;--surf:#111118;--brd:#1e1e2e;--acc:#e8ff47;--teal:#47ffe8;--txt:#f0f0f0;--mut:#555570;--red:#ff4757;--purple:#a855f7;--ws:clamp(2.6rem,8vw,5rem);--safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px)}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden}
 body{background:var(--bg);color:var(--txt);font-family:'DM Mono',monospace;display:flex;flex-direction:column;padding-top:var(--safe-top);padding-bottom:var(--safe-bot)}
 body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.03;background:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
-
-/* HEADER */
+#boot{position:fixed;inset:0;z-index:999;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1.2rem;transition:opacity .6s}
+#boot.hide{opacity:0;pointer-events:none}
+.boot-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:2.2rem;letter-spacing:-.04em}
+.boot-logo b{color:var(--acc)}
+.boot-sub{font-size:.72rem;color:var(--mut);letter-spacing:.1em;text-align:center;max-width:260px;line-height:1.7}
+.spin{width:34px;height:34px;border:2.5px solid var(--brd);border-top-color:var(--acc);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
 header{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;border-bottom:1px solid var(--brd);flex-shrink:0;position:relative;z-index:10}
 .logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.25rem;letter-spacing:-.03em}
 .logo b{color:var(--acc)}
 .hdr-r{display:flex;align-items:center;gap:.6rem}
-.cam-thumb{position:relative;width:70px;height:52px;border-radius:5px;overflow:hidden;border:1.5px solid var(--brd);background:#000;flex-shrink:0;transition:border-color .3s,box-shadow .3s}
-.cam-thumb.ok{border-color:var(--teal);box-shadow:0 0 10px rgba(71,255,232,.25)}
-.cam-thumb.bad{border-color:var(--red);box-shadow:0 0 10px rgba(255,71,87,.25)}
+.cam-thumb{position:relative;width:80px;height:60px;border-radius:6px;overflow:hidden;border:2px solid var(--brd);background:#000;flex-shrink:0;transition:border-color .2s,box-shadow .2s}
+.cam-thumb.ok{border-color:var(--teal);box-shadow:0 0 14px rgba(71,255,232,.3)}
+.cam-thumb.bad{border-color:var(--red);box-shadow:0 0 14px rgba(255,71,87,.3)}
 #camVid{width:100%;height:100%;object-fit:cover;display:block;transform:scaleX(-1)}
 #camCvs{position:absolute;inset:0;width:100%;height:100%;transform:scaleX(-1)}
-.cam-lbl{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:.4rem;letter-spacing:.07em;background:rgba(0,0,0,.85);padding:1px 5px;border-radius:2px;white-space:nowrap;color:var(--mut)}
+.cam-lbl{position:absolute;bottom:2px;left:50%;transform:translateX(-50%);font-size:.38rem;letter-spacing:.07em;background:rgba(0,0,0,.88);padding:1px 5px;border-radius:2px;white-space:nowrap;color:var(--mut)}
 .eye-pill{display:flex;align-items:center;gap:.38rem;font-size:.6rem;letter-spacing:.09em;text-transform:uppercase;color:var(--mut)}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--mut);transition:all .3s;flex-shrink:0}
-.dot.ok{background:var(--teal);box-shadow:0 0 7px var(--teal)}
-.dot.bad{background:var(--red);box-shadow:0 0 7px var(--red);animation:blink 1s infinite}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
-
-/* SCREENS */
+.dot{width:8px;height:8px;border-radius:50%;background:var(--mut);transition:all .2s;flex-shrink:0}
+.dot.ok{background:var(--teal);box-shadow:0 0 8px var(--teal)}
+.dot.bad{background:var(--red);box-shadow:0 0 8px var(--red);animation:blink .7s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
 .screen{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;position:relative;z-index:5}
-
-/* UPLOAD SCREEN */
 #uploadScreen{display:flex;flex-direction:column;align-items:center;padding:1.5rem 1.2rem 4rem;gap:1.3rem;text-align:center}
 .big{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,6vw,2.8rem);font-weight:800;line-height:1.1;letter-spacing:-.04em}
 .big em{font-style:normal;color:var(--acc);display:block}
 .sub{color:var(--mut);font-size:.78rem;max-width:340px;line-height:1.65}
-
-/* cam card */
 .cam-card{width:100%;max-width:440px;background:var(--surf);border:1px solid var(--brd);border-radius:8px;padding:.85rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
 .cam-card-txt{text-align:left;font-size:.7rem;color:var(--mut);line-height:1.5}
 .cam-card-txt b{color:var(--txt);display:block;margin-bottom:.1rem;font-size:.76rem}
@@ -58,17 +52,12 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.8r
 .pill-btn:active{transform:scale(.95)}
 .pill-btn.ok{border-color:var(--teal);color:var(--teal);pointer-events:none}
 .pill-btn.err{border-color:var(--red);color:var(--red);pointer-events:none}
-
-/* section headers */
-.sec-hdr{width:100%;max-width:440px;display:flex;align-items:center;gap:.6rem;text-align:left}
+.sec-hdr{width:100%;max-width:440px;display:flex;align-items:center;gap:.6rem}
 .sec-hdr-txt{font-size:.62rem;color:var(--mut);letter-spacing:.12em;text-transform:uppercase}
 .sec-hdr::after{content:'';flex:1;height:1px;background:var(--brd)}
-
-/* import cards */
 .import-grid{display:flex;flex-direction:column;gap:.6rem;width:100%;max-width:440px}
-.import-card{background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;overflow:hidden;transition:border-color .2s}
-.import-card:active{border-color:var(--acc)}
-.ic-header{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;cursor:pointer}
+.import-card{background:var(--surf);border:1.5px solid var(--brd);border-radius:8px;overflow:hidden}
+.ic-header{display:flex;align-items:center;gap:.75rem;padding:.8rem 1rem;cursor:pointer;user-select:none}
 .ic-logo{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
 .ic-logo.libby{background:linear-gradient(135deg,#00a3e0,#0073b1)}
 .ic-logo.kindle{background:linear-gradient(135deg,#ff9900,#e47911)}
@@ -80,23 +69,17 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.8r
 .ic-badge{font-size:.5rem;letter-spacing:.08em;text-transform:uppercase;border:1px solid;border-radius:3px;padding:.1rem .35rem;flex-shrink:0}
 .ic-badge.free{border-color:var(--teal);color:var(--teal)}
 .ic-badge.app{border-color:var(--purple);color:var(--purple)}
-
-/* expandable how-to panels */
 .ic-howto{display:none;padding:.85rem 1rem 1rem;border-top:1px solid var(--brd);text-align:left}
 .ic-howto.open{display:block}
 .howto-title{font-size:.62rem;color:var(--acc);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem}
 .howto-steps{display:flex;flex-direction:column;gap:.45rem}
 .howto-step{display:flex;gap:.6rem;font-size:.68rem;color:var(--mut);line-height:1.5}
 .step-num{width:18px;height:18px;border-radius:50%;background:var(--brd);color:var(--txt);font-size:.55rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:.05rem}
-.howto-note{font-size:.62rem;color:var(--mut);margin-top:.65rem;padding:.5rem .7rem;background:rgba(255,255,255,.03);border-left:2px solid var(--brd);border-radius:0 4px 4px 0;line-height:1.5}
+.howto-note{font-size:.62rem;color:var(--mut);margin-top:.65rem;padding:.5rem .7rem;background:rgba(255,255,255,.03);border-left:2px solid var(--acc);border-radius:0 4px 4px 0;line-height:1.5}
 .howto-note b{color:var(--txt)}
-
-/* file upload trigger buttons */
 .upload-trigger{display:flex;align-items:center;justify-content:center;gap:.45rem;margin-top:.75rem;padding:.55rem 1rem;background:var(--acc);color:#0a0a0f;border:none;border-radius:5px;font-family:'DM Mono',monospace;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;font-weight:500;cursor:pointer;position:relative;width:100%;transition:all .15s}
 .upload-trigger:active{background:#fff}
 .upload-trigger input{position:absolute;inset:0;opacity:0;cursor:pointer}
-
-/* library */
 .lib-wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:.5rem}
 .lib-item{background:var(--surf);border:1px solid var(--brd);border-radius:6px;padding:.65rem .9rem;display:flex;align-items:center;gap:.7rem;cursor:pointer;transition:border-color .2s}
 .lib-item:active{border-color:var(--acc)}
@@ -107,12 +90,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:.8r
 .lib-del{background:none;border:none;color:var(--mut);font-size:1rem;cursor:pointer;padding:.2rem .4rem;flex-shrink:0}
 .lib-del:active{color:var(--red)}
 .lib-empty{font-size:.7rem;color:var(--mut);text-align:center;padding:.6rem;width:100%;max-width:440px;border:1px dashed var(--brd);border-radius:6px}
-
-/* divider */
 .divider{display:flex;align-items:center;gap:.75rem;width:100%;max-width:440px;color:var(--mut);font-size:.62rem;letter-spacing:.1em}
 .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--brd)}
-
-/* paste */
 .paste-wrap{width:100%;max-width:440px;display:flex;flex-direction:column;gap:.6rem}
 .paste-lbl{font-size:.6rem;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;text-align:left}
 textarea{background:var(--surf);border:1.5px solid var(--brd);border-radius:6px;color:var(--txt);font-family:'DM Mono',monospace;font-size:16px;padding:.85rem;resize:none;height:100px;transition:border-color .2s;width:100%}
@@ -121,8 +100,6 @@ textarea:focus{outline:none;border-color:var(--teal)}
 .btn:active{transform:scale(.98)}
 .btn-p{background:var(--acc);color:#0a0a0f;font-weight:500}
 .btn-p:disabled{opacity:.3;pointer-events:none}
-
-/* READER */
 #readerScreen{display:none;flex-direction:column;height:100%;padding:.7rem 1.1rem;gap:.5rem;position:relative;z-index:5}
 .top-bar{display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .stats{display:flex;gap:.9rem;font-size:.55rem;letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
@@ -130,17 +107,14 @@ textarea:focus{outline:none;border-color:var(--teal)}
 .sl{font-size:.5rem}
 .lnk{background:none;border:none;color:var(--mut);font-family:'DM Mono',monospace;font-size:.62rem;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;padding:.3rem 0}
 .lnk:active{color:var(--txt)}
-
 .gaze-row{display:flex;align-items:center;gap:.5rem;padding:.45rem .75rem;background:var(--surf);border:1px solid var(--brd);border-radius:6px;flex-shrink:0;font-size:.55rem;color:var(--mut);letter-spacing:.08em;text-transform:uppercase}
-.g-track{flex:1;height:4px;background:var(--brd);border-radius:2px;overflow:hidden}
-.g-fill{height:100%;width:0%;border-radius:2px;transition:width .12s,background .3s;background:var(--teal)}
+.g-track{flex:1;height:5px;background:var(--brd);border-radius:3px;overflow:hidden}
+.g-fill{height:100%;width:0%;border-radius:3px;transition:width .1s,background .2s;background:var(--teal)}
 .g-fill.low{background:var(--red)}
 .g-pct{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--teal);min-width:2.5rem;text-align:right}
 .g-pct.low{color:var(--red)}
-.g-lbl{min-width:4.2rem;font-size:.54rem}
-
+.g-lbl{min-width:5rem;font-size:.54rem}
 .ctx{font-size:.7rem;color:var(--mut);text-align:center;height:1.2rem;flex-shrink:0;opacity:.6}
-
 .stage{flex:1;position:relative;display:flex;align-items:center;justify-content:center;min-height:0}
 .g-h{position:absolute;width:100%;height:1px;top:50%;background:var(--brd)}
 .g-v{position:absolute;width:1px;height:100%;left:50%;background:var(--brd)}
@@ -150,22 +124,18 @@ textarea:focus{outline:none;border-color:var(--teal)}
 .word-wrap{position:relative;z-index:2;text-align:center;padding:0 1rem}
 #wordEl{font-family:'Syne',sans-serif;font-size:var(--ws);font-weight:800;letter-spacing:-.02em;line-height:1;display:inline-block;word-break:break-word}
 #wordEl .o{color:var(--acc)}
-
-.p-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.6rem;background:rgba(10,10,15,.93);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:8px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.p-ov{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:.6rem;background:rgba(10,10,15,.93);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:20}
 .p-ov.show{opacity:1;pointer-events:all}
-.p-ico{font-size:1.9rem}
+.p-ico{font-size:2rem}
 .p-lbl{font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:800;letter-spacing:.05em}
-.p-rsn{font-size:.6rem;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;text-align:center;max-width:220px}
-
+.p-rsn{font-size:.6rem;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;text-align:center;max-width:240px;line-height:1.5}
 .prog{height:3px;background:var(--brd);border-radius:2px;overflow:hidden;flex-shrink:0}
 .prog-f{height:100%;background:linear-gradient(90deg,var(--teal),var(--acc));border-radius:2px;transition:width .1s linear;width:0%}
-
 .controls{display:flex;align-items:center;justify-content:center;gap:.6rem;flex-shrink:0;padding:.05rem 0}
 .cb{width:50px;height:50px;border-radius:50%;border:1.5px solid var(--brd);background:var(--surf);color:var(--txt);font-size:.95rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
 .cb:active{transform:scale(.9);border-color:var(--acc)}
 .cb.play{width:64px;height:64px;font-size:1.35rem;background:var(--acc);color:#0a0a0f;border-color:var(--acc)}
 .cb.play:active{background:#fff}
-
 .spd-panel{background:var(--surf);border:1px solid var(--brd);border-radius:8px;padding:.85rem .95rem;display:flex;flex-direction:column;gap:.5rem;flex-shrink:0}
 .spd-hdr{display:flex;align-items:baseline;justify-content:space-between}
 .spd-lbl{font-size:.58rem;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
@@ -176,663 +146,187 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;heigh
 .presets{display:flex;gap:.32rem;flex-wrap:wrap}
 .pre{padding:.26rem .58rem;border:1px solid var(--brd);background:transparent;color:var(--mut);border-radius:3px;font-family:'DM Mono',monospace;font-size:.58rem;letter-spacing:.05em;cursor:pointer;transition:all .15s}
 .pre:active,.pre.on{border-color:var(--acc);color:var(--acc);background:rgba(232,255,71,.06)}
-
-/* TOAST */
 #toast{position:fixed;top:calc(1rem + var(--safe-top));left:50%;transform:translateX(-50%);background:var(--surf);border:1px solid var(--brd);border-radius:8px;padding:.6rem 1.1rem;font-size:.7rem;color:var(--txt);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s;white-space:nowrap;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 #toast.show{opacity:1}
-
-/* INSTALL BANNER */
 #installBanner{position:fixed;bottom:calc(.75rem + var(--safe-bot));left:50%;transform:translateX(-50%);width:calc(100% - 2rem);max-width:370px;background:var(--surf);border:1px solid var(--brd);border-radius:12px;padding:.8rem .95rem;display:flex;align-items:center;gap:.7rem;box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:200;opacity:0;pointer-events:none;transition:opacity .3s}
 #installBanner.show{opacity:1;pointer-events:all}
 .ib-ico{font-size:1.4rem;flex-shrink:0}
 .ib-txt{font-size:.68rem;color:var(--mut);line-height:1.5;flex:1}
 .ib-txt b{color:var(--txt)}
 .ib-close{background:none;border:none;color:var(--mut);font-size:1rem;cursor:pointer;flex-shrink:0;padding:.2rem}
-
-/* ANIMATIONS */
 @keyframes wIn{from{opacity:0;transform:scale(.93) translateY(5px)}to{opacity:1;transform:none}}
 .wa{animation:wIn .07s ease-out forwards}
 @keyframes fUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 #uploadScreen>*{animation:fUp .4s ease forwards;opacity:0}
-#uploadScreen>*:nth-child(1){animation-delay:.04s}
-#uploadScreen>*:nth-child(2){animation-delay:.08s}
-#uploadScreen>*:nth-child(3){animation-delay:.12s}
-#uploadScreen>*:nth-child(4){animation-delay:.16s}
-#uploadScreen>*:nth-child(5){animation-delay:.20s}
-#uploadScreen>*:nth-child(6){animation-delay:.24s}
-#uploadScreen>*:nth-child(7){animation-delay:.28s}
-#uploadScreen>*:nth-child(8){animation-delay:.32s}
-#uploadScreen>*:nth-child(9){animation-delay:.36s}
-#uploadScreen>*:nth-child(10){animation-delay:.40s}
+#uploadScreen>*:nth-child(1){animation-delay:.04s}#uploadScreen>*:nth-child(2){animation-delay:.08s}
+#uploadScreen>*:nth-child(3){animation-delay:.12s}#uploadScreen>*:nth-child(4){animation-delay:.16s}
+#uploadScreen>*:nth-child(5){animation-delay:.20s}#uploadScreen>*:nth-child(6){animation-delay:.24s}
+#uploadScreen>*:nth-child(7){animation-delay:.28s}#uploadScreen>*:nth-child(8){animation-delay:.32s}
+#uploadScreen>*:nth-child(9){animation-delay:.36s}#uploadScreen>*:nth-child(10){animation-delay:.40s}
 </style>
 </head>
 <body>
-
+<div id="boot"><div class="boot-logo">Flash<b>Read</b></div><div class="spin"></div><div class="boot-sub" id="bootMsg">Loading face detection…</div></div>
 <div id="toast"></div>
-
 <header>
   <div class="logo">Flash<b>Read</b></div>
   <div class="hdr-r">
-    <div class="cam-thumb" id="camThumb">
-      <video id="camVid" autoplay muted playsinline webkit-playsinline></video>
-      <canvas id="camCvs"></canvas>
-      <div class="cam-lbl" id="camLbl">NO CAM</div>
-    </div>
-    <div class="eye-pill">
-      <div class="dot" id="eyeDot"></div>
-      <span id="eyeLbl">–</span>
-    </div>
+    <div class="cam-thumb" id="camThumb"><video id="camVid" autoplay muted playsinline webkit-playsinline></video><canvas id="camCvs"></canvas><div class="cam-lbl" id="camLbl">NO CAM</div></div>
+    <div class="eye-pill"><div class="dot" id="eyeDot"></div><span id="eyeLbl">–</span></div>
   </div>
 </header>
-
-<!-- UPLOAD SCREEN -->
-<div class="screen" id="uploadWrap">
-<div id="uploadScreen">
-
+<div class="screen" id="uploadWrap"><div id="uploadScreen">
   <div class="big">Read at the<em>speed of thought.</em></div>
-  <p class="sub">Eye tracking pauses reading the moment you look away — and resumes when you look back.</p>
-
-  <!-- Camera -->
-  <div class="cam-card">
-    <div class="cam-card-txt">
-      <b>📷 Enable Front Camera</b>
-      Required for eye tracking. Nothing leaves your device.
-    </div>
-    <button class="pill-btn" id="camBtn">Enable</button>
-  </div>
-
-  <!-- Import Sources -->
+  <p class="sub">Real face detection pauses reading the instant you look away — and resumes the moment you look back.</p>
+  <div class="cam-card"><div class="cam-card-txt"><b>📷 Front Camera Required</b>AI face detection — everything runs on your device.</div><button class="pill-btn" id="camBtn">Enable</button></div>
   <div class="sec-hdr"><span class="sec-hdr-txt">📚 Import a Book</span></div>
   <div class="import-grid">
-
-    <!-- LIBBY -->
-    <div class="import-card" id="libbyCard">
-      <div class="ic-header" onclick="toggleHowTo('libby')">
-        <div class="ic-logo libby">📗</div>
-        <div class="ic-info">
-          <div class="ic-name">Libby — Library Books</div>
-          <div class="ic-desc">Free ebooks from your public library</div>
-        </div>
-        <div class="ic-badge free">FREE</div>
-      </div>
-      <div class="ic-howto" id="howto-libby">
-        <div class="howto-title">How to import from Libby</div>
-        <div class="howto-steps">
-          <div class="howto-step"><div class="step-num">1</div><div>Open the <b>Libby app</b> and borrow a book (choose EPUB format when offered)</div></div>
-          <div class="howto-step"><div class="step-num">2</div><div>Tap the book → tap <b>"Read with…"</b> → tap <b>"Share EPUB"</b></div></div>
-          <div class="howto-step"><div class="step-num">3</div><div>Tap <b>"Save to Files"</b> → save it anywhere</div></div>
-          <div class="howto-step"><div class="step-num">4</div><div>Come back here and tap <b>Load EPUB File</b> below ↓</div></div>
-        </div>
-        <div class="howto-note"><b>Note:</b> Only EPUB format works — some library books are Kindle format. When borrowing, look for the EPUB/OverDrive option.</div>
-        <button class="upload-trigger">
-          <input type="file" id="epubIn" accept=".epub">
-          📂 Load EPUB File
-        </button>
-      </div>
-    </div>
-
-    <!-- KINDLE -->
-    <div class="import-card" id="kindleCard">
-      <div class="ic-header" onclick="toggleHowTo('kindle')">
-        <div class="ic-logo kindle">📙</div>
-        <div class="ic-info">
-          <div class="ic-name">Amazon Kindle Books</div>
-          <div class="ic-desc">Import books from your Amazon library</div>
-        </div>
-        <div class="ic-badge app">AMAZON</div>
-      </div>
-      <div class="ic-howto" id="howto-kindle">
-        <div class="howto-title">How to import Kindle books</div>
-        <div class="howto-steps">
-          <div class="howto-step"><div class="step-num">1</div><div>On a computer, go to <b>read.amazon.com</b> and open your book</div></div>
-          <div class="howto-step"><div class="step-num">2</div><div>Use <b>Calibre</b> (free app at calibre-ebook.com) to convert your Kindle book to EPUB or TXT</div></div>
-          <div class="howto-step"><div class="step-num">3</div><div>Transfer the file to your iPad via <b>AirDrop or iCloud</b></div></div>
-          <div class="howto-step"><div class="step-num">4</div><div>Load the file here using the button below ↓</div></div>
-        </div>
-        <div class="howto-note"><b>Easier option:</b> Many Kindle books can be borrowed for free from your library via Libby — search for the title there first!</div>
-        <button class="upload-trigger">
-          <input type="file" id="kindleIn" accept=".epub,.txt,.md">
-          📂 Load EPUB or TXT File
-        </button>
-      </div>
-    </div>
-
-    <!-- EPUB FILE -->
-    <div class="import-card">
-      <div class="ic-header" onclick="toggleHowTo('epub')">
-        <div class="ic-logo epub">📘</div>
-        <div class="ic-info">
-          <div class="ic-name">EPUB File</div>
-          <div class="ic-desc">Load any .epub ebook from your Files app</div>
-        </div>
-        <div class="ic-badge free">EPUB</div>
-      </div>
-      <div class="ic-howto" id="howto-epub">
-        <div class="howto-title">Load an EPUB from Files</div>
-        <div class="howto-steps">
-          <div class="howto-step"><div class="step-num">1</div><div>Download any free EPUB from <b>Project Gutenberg</b> (gutenberg.org) — thousands of free classics</div></div>
-          <div class="howto-step"><div class="step-num">2</div><div>Or transfer an EPUB to your iPad via <b>AirDrop, iCloud, or email</b></div></div>
-          <div class="howto-step"><div class="step-num">3</div><div>Tap the button below and select your .epub file</div></div>
-        </div>
-        <button class="upload-trigger">
-          <input type="file" id="epubIn2" accept=".epub">
-          📂 Load EPUB File
-        </button>
-      </div>
-    </div>
-
-    <!-- TXT -->
-    <div class="import-card">
-      <div class="ic-header" onclick="toggleHowTo('txt')">
-        <div class="ic-logo txt">📄</div>
-        <div class="ic-info">
-          <div class="ic-name">Text File (.txt .md)</div>
-          <div class="ic-desc">Load any plain text file</div>
-        </div>
-        <div class="ic-badge free">TXT</div>
-      </div>
-      <div class="ic-howto" id="howto-txt">
-        <div class="howto-steps">
-          <div class="howto-step"><div class="step-num">1</div><div>Tap the button below and select any .txt or .md file from your Files app</div></div>
-        </div>
-        <button class="upload-trigger">
-          <input type="file" id="txtIn" accept=".txt,.md,.text">
-          📂 Load Text File
-        </button>
-      </div>
-    </div>
-
+    <div class="import-card"><div class="ic-header" onclick="toggleHowTo('libby')"><div class="ic-logo libby">📗</div><div class="ic-info"><div class="ic-name">Libby — Library Books</div><div class="ic-desc">Free ebooks from your public library</div></div><div class="ic-badge free">FREE</div></div><div class="ic-howto" id="howto-libby"><div class="howto-title">How to import from Libby</div><div class="howto-steps"><div class="howto-step"><div class="step-num">1</div><div>Open <b>Libby</b> and borrow a book — choose <b>EPUB</b> format</div></div><div class="howto-step"><div class="step-num">2</div><div>Tap the book → <b>Read with…</b> → <b>Share EPUB</b></div></div><div class="howto-step"><div class="step-num">3</div><div>Tap <b>Save to Files</b></div></div><div class="howto-step"><div class="step-num">4</div><div>Come back here and tap <b>Load EPUB</b> below</div></div></div><div class="howto-note"><b>Note:</b> Choose the OverDrive/EPUB option — not Kindle format.</div><button class="upload-trigger"><input type="file" id="epubIn" accept=".epub">📂 Load EPUB File</button></div></div>
+    <div class="import-card"><div class="ic-header" onclick="toggleHowTo('kindle')"><div class="ic-logo kindle">📙</div><div class="ic-info"><div class="ic-name">Amazon Kindle Books</div><div class="ic-desc">Import from your Amazon library</div></div><div class="ic-badge app">AMAZON</div></div><div class="ic-howto" id="howto-kindle"><div class="howto-title">How to import Kindle books</div><div class="howto-steps"><div class="howto-step"><div class="step-num">1</div><div>On a computer go to <b>read.amazon.com</b></div></div><div class="howto-step"><div class="step-num">2</div><div>Use <b>Calibre</b> (free at calibre-ebook.com) to convert to EPUB or TXT</div></div><div class="howto-step"><div class="step-num">3</div><div>Send to iPad via <b>AirDrop or iCloud</b></div></div><div class="howto-step"><div class="step-num">4</div><div>Tap <b>Load File</b> below</div></div></div><div class="howto-note"><b>Tip:</b> Many Kindle books are free from your library via Libby!</div><button class="upload-trigger"><input type="file" id="kindleIn" accept=".epub,.txt,.md">📂 Load EPUB or TXT</button></div></div>
+    <div class="import-card"><div class="ic-header" onclick="toggleHowTo('epub')"><div class="ic-logo epub">📘</div><div class="ic-info"><div class="ic-name">EPUB File</div><div class="ic-desc">Any .epub from your Files app</div></div><div class="ic-badge free">EPUB</div></div><div class="ic-howto" id="howto-epub"><div class="howto-title">Load any EPUB</div><div class="howto-steps"><div class="howto-step"><div class="step-num">1</div><div>Get free classics at <b>gutenberg.org</b></div></div><div class="howto-step"><div class="step-num">2</div><div>Transfer any .epub via AirDrop, iCloud, or email</div></div><div class="howto-step"><div class="step-num">3</div><div>Tap below and pick your file</div></div></div><button class="upload-trigger"><input type="file" id="epubIn2" accept=".epub">📂 Load EPUB File</button></div></div>
+    <div class="import-card"><div class="ic-header" onclick="toggleHowTo('txt')"><div class="ic-logo txt">📄</div><div class="ic-info"><div class="ic-name">Text File (.txt .md)</div><div class="ic-desc">Plain text from your Files app</div></div><div class="ic-badge free">TXT</div></div><div class="ic-howto" id="howto-txt"><div class="howto-steps"><div class="howto-step"><div class="step-num">1</div><div>Tap below and select any .txt or .md file</div></div></div><button class="upload-trigger"><input type="file" id="txtIn" accept=".txt,.md,.text">📂 Load Text File</button></div></div>
   </div>
-
-  <!-- Library -->
   <div class="sec-hdr"><span class="sec-hdr-txt">🗂 Your Library</span></div>
-  <div class="lib-wrap" id="libWrap">
-    <div class="lib-empty" id="libEmpty">No books yet — import one above</div>
-  </div>
-
+  <div class="lib-wrap" id="libWrap"><div class="lib-empty" id="libEmpty">No books yet — import one above</div></div>
   <div class="divider">or paste text directly</div>
-
-  <div class="paste-wrap">
-    <div class="paste-lbl">Paste any text</div>
-    <textarea id="pasteIn" placeholder="Paste an article, chapter, or any text here…"></textarea>
-    <button class="btn btn-p" id="startBtn" disabled>Start Reading →</button>
-  </div>
-
-</div>
-</div>
-
-<!-- READER SCREEN -->
+  <div class="paste-wrap"><div class="paste-lbl">Paste any text</div><textarea id="pasteIn" placeholder="Paste an article, chapter, or any text here…"></textarea><button class="btn btn-p" id="startBtn" disabled>Start Reading →</button></div>
+</div></div>
 <div id="readerScreen">
-  <div class="top-bar">
-    <button class="lnk" id="backBtn">← Library</button>
-    <div class="stats">
-      <div><div class="sv" id="sWpm">300</div><div class="sl">WPM</div></div>
-      <div><div class="sv" id="sPct">0%</div><div class="sl">DONE</div></div>
-      <div><div class="sv" id="sMin">–</div><div class="sl">MIN LEFT</div></div>
-      <div><div class="sv" id="sTot">0</div><div class="sl">WORDS</div></div>
-    </div>
-  </div>
-
-  <div class="gaze-row">
-    <span>Eye Contact</span>
-    <div class="g-track"><div class="g-fill" id="gFill"></div></div>
-    <span class="g-pct" id="gPct">–</span>
-    <span class="g-lbl" id="gLbl">–</span>
-  </div>
-
+  <div class="top-bar"><button class="lnk" id="backBtn">← Library</button><div class="stats"><div><div class="sv" id="sWpm">300</div><div class="sl">WPM</div></div><div><div class="sv" id="sPct">0%</div><div class="sl">DONE</div></div><div><div class="sv" id="sMin">–</div><div class="sl">MIN LEFT</div></div><div><div class="sv" id="sTot">0</div><div class="sl">WORDS</div></div></div></div>
+  <div class="gaze-row"><span>Face Detected</span><div class="g-track"><div class="g-fill" id="gFill"></div></div><span class="g-pct" id="gPct">–</span><span class="g-lbl" id="gLbl">–</span></div>
   <div class="ctx"><span id="ctxP"></span>&nbsp;&nbsp;<span id="ctxN"></span></div>
-
-  <div class="stage">
-    <div class="g-h"></div><div class="g-v"></div>
-    <div class="ring" id="ring"></div>
-    <div class="word-wrap"><div id="wordEl">READY</div></div>
-    <div class="p-ov" id="pOv">
-      <div class="p-ico" id="pIco">⏸</div>
-      <div class="p-lbl">PAUSED</div>
-      <div class="p-rsn" id="pRsn">PAUSED BY USER</div>
-    </div>
-  </div>
-
+  <div class="stage"><div class="g-h"></div><div class="g-v"></div><div class="ring" id="ring"></div><div class="word-wrap"><div id="wordEl">READY</div></div><div class="p-ov" id="pOv"><div class="p-ico" id="pIco">⏸</div><div class="p-lbl">PAUSED</div><div class="p-rsn" id="pRsn">PAUSED BY USER</div></div></div>
   <div class="prog"><div class="prog-f" id="progF"></div></div>
-
-  <div class="controls">
-    <button class="cb" id="bB10">⏮</button>
-    <button class="cb" id="bSlow">🐢</button>
-    <button class="cb play" id="bPlay">▶</button>
-    <button class="cb" id="bFast">🐇</button>
-    <button class="cb" id="bF10">⏭</button>
-  </div>
-
-  <div class="spd-panel">
-    <div class="spd-hdr">
-      <div class="spd-lbl">Reading Speed</div>
-      <div class="spd-num" id="spdNum">300 <small>wpm</small></div>
-    </div>
-    <input type="range" id="spdSlider" min="100" max="1000" value="300" step="10">
-    <div class="presets">
-      <button class="pre" data-w="100">100</button>
-      <button class="pre" data-w="200">200</button>
-      <button class="pre on" data-w="300">300</button>
-      <button class="pre" data-w="400">400</button>
-      <button class="pre" data-w="500">500</button>
-      <button class="pre" data-w="700">700</button>
-      <button class="pre" data-w="1000">1000</button>
-    </div>
-  </div>
+  <div class="controls"><button class="cb" id="bB10">⏮</button><button class="cb" id="bSlow">🐢</button><button class="cb play" id="bPlay">▶</button><button class="cb" id="bFast">🐇</button><button class="cb" id="bF10">⏭</button></div>
+  <div class="spd-panel"><div class="spd-hdr"><div class="spd-lbl">Reading Speed</div><div class="spd-num" id="spdNum">300 <small>wpm</small></div></div><input type="range" id="spdSlider" min="100" max="1000" value="300" step="10"><div class="presets"><button class="pre" data-w="100">100</button><button class="pre" data-w="200">200</button><button class="pre on" data-w="300">300</button><button class="pre" data-w="400">400</button><button class="pre" data-w="500">500</button><button class="pre" data-w="700">700</button><button class="pre" data-w="1000">1000</button></div></div>
 </div>
-
-<div id="installBanner">
-  <div class="ib-ico">📲</div>
-  <div class="ib-txt"><b>Install as App</b><br>Tap Share → <b>Add to Home Screen</b></div>
-  <button class="ib-close" id="bannerClose">✕</button>
-</div>
-
+<div id="installBanner"><div class="ib-ico">📲</div><div class="ib-txt"><b>Install as App</b><br>Tap Share → <b>Add to Home Screen</b></div><button class="ib-close" id="bannerClose">✕</button></div>
 <script>
 const $=id=>document.getElementById(id);
-
-/* ══ STATE ══ */
 let words=[],idx=0,wpm=300;
 let playing=false,pUser=false,pGaze=false,pWin=false;
 let tickTimer=null,trackTimer=null;
 let stream=null,camLive=false;
-let gazeScore=0,frameHistory=[],missCount=0;
-let prevFrame=null;
-const HIST=10, MISS=4;
-
-/* ══ LIBRARY ══ */
-let library=[];
-try{library=JSON.parse(localStorage.getItem('fr_lib')||'[]');}catch(e){}
-
-/* ══ HOW-TO TOGGLES ══ */
-function toggleHowTo(id){
-  const el=$('howto-'+id);
-  el.classList.toggle('open');
+let faceModel=null,modelReady=false;
+let faceScore=0,missCount=0,hitCount=0,confHistory=[];
+async function boot(){
+  const msg=$('bootMsg');
+  try{msg.textContent='Loading face detection model…';faceModel=await blazeface.load();modelReady=true;msg.textContent='Face detection ready ✓';}
+  catch(e){msg.textContent='Using fallback detection';modelReady=false;}
+  setTimeout(()=>{$('boot').classList.add('hide');setTimeout(()=>$('boot').style.display='none',600);},700);
 }
-
-/* ══ CAMERA ══ */
 $('camBtn').addEventListener('click',startCamera);
-
 async function startCamera(){
-  const btn=$('camBtn');
-  btn.textContent='Starting…';
-
-  const attempts=[
-    {video:{facingMode:{exact:'user'},width:{ideal:640},height:{ideal:480}}},
-    {video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}},
-    {video:{facingMode:'user'}},
-    {video:true}
-  ];
-
+  const btn=$('camBtn');btn.textContent='Starting…';
+  const tries=[{video:{facingMode:{exact:'user'},width:{ideal:320},height:{ideal:240}}},{video:{facingMode:'user',width:{ideal:320},height:{ideal:240}}},{video:{facingMode:'user'}},{video:true}];
   let ok=false;
-  for(const c of attempts){
-    try{stream=await navigator.mediaDevices.getUserMedia({...c,audio:false});ok=true;break;}
-    catch(e){console.log('cam attempt:',e.name);}
-  }
+  for(const c of tries){try{stream=await navigator.mediaDevices.getUserMedia({...c,audio:false});ok=true;break;}catch(e){}}
   if(!ok){btn.textContent='✗ Denied';btn.classList.add('err');setEye('bad','DENIED');return;}
-
-  const vid=$('camVid');
-  vid.srcObject=stream;
-  try{await vid.play();}catch(e){}
-
-  await new Promise(res=>{
-    const poll=()=>{if(vid.videoWidth>0||vid.readyState>=2){res();return;}setTimeout(poll,80);};
-    vid.addEventListener('loadedmetadata',res,{once:true});
-    setTimeout(res,5000);poll();
-  });
-
-  const cvs=$('camCvs');
-  cvs.width=vid.videoWidth||320;
-  cvs.height=vid.videoHeight||240;
-
-  camLive=true;
-  $('camThumb').className='cam-thumb ok';
-  $('camLbl').textContent='LIVE';
-  btn.textContent='✓ On';btn.classList.add('ok');
-  setEye('ok','READY');
-  startTracking();
+  const vid=$('camVid');vid.srcObject=stream;try{await vid.play();}catch(e){}
+  await new Promise(res=>{const poll=()=>{if(vid.videoWidth>0||vid.readyState>=2){res();return;}setTimeout(poll,80);};vid.addEventListener('loadedmetadata',res,{once:true});setTimeout(res,5000);poll();});
+  const cvs=$('camCvs');cvs.width=vid.videoWidth||320;cvs.height=vid.videoHeight||240;
+  camLive=true;$('camThumb').className='cam-thumb ok';$('camLbl').textContent=modelReady?'AI':'LIVE';
+  btn.textContent='✓ On';btn.classList.add('ok');setEye('ok','READY');startTracking();
 }
-
-/* ══ EYE TRACKING ══
-   Two-layer approach:
-   1. Motion detection — compares frames to see if something moved (face/eyes moving = present)
-   2. Brightness zone check — center zone should have face-level brightness
-   This combo is reliable without any external libraries.
-══ */
-function startTracking(){
-  if(trackTimer)clearInterval(trackTimer);
-  trackTimer=setInterval(analyseFrame,120);
-}
-
-function analyseFrame(){
+function startTracking(){if(trackTimer)clearInterval(trackTimer);trackTimer=setInterval(runFrame,200);}
+async function runFrame(){
   const vid=$('camVid'),cvs=$('camCvs');
   if(!camLive||!vid||vid.readyState<2||vid.videoWidth===0)return;
-
-  const ctx=cvs.getContext('2d',{willReadFrequently:true});
-  const W=cvs.width,H=cvs.height;
-  ctx.drawImage(vid,0,0,W,H);
-
-  // Sample the face zone — center 60% wide, top 70% tall
-  const zx=Math.floor(W*.2), zy=Math.floor(H*.02);
-  const zw=Math.floor(W*.6), zh=Math.floor(H*.7);
-
-  let data;
-  try{data=ctx.getImageData(zx,zy,zw,zh).data;}
-  catch(e){return;}
-
-  // ── Metric 1: Skin tone presence ──
-  let skinPx=0, totalPx=0;
-  for(let i=0;i<data.length;i+=4*8){
+  let present=false,confidence=0;
+  if(modelReady&&faceModel){
+    try{
+      const preds=await faceModel.estimateFaces(vid,false);
+      if(preds&&preds.length>0){
+        const best=preds.reduce((a,b)=>b.probability[0]>a.probability[0]?b:a);
+        confidence=best.probability[0];present=confidence>0.7;
+        const ctx=cvs.getContext('2d');ctx.clearRect(0,0,cvs.width,cvs.height);
+        if(present){
+          const sx=cvs.width/vid.videoWidth,sy=cvs.height/vid.videoHeight;
+          const [x1,y1]=best.topLeft,[x2,y2]=best.bottomRight;
+          const mx1=cvs.width-(x2*sx),mx2=cvs.width-(x1*sx);
+          ctx.strokeStyle='rgba(71,255,232,.9)';ctx.lineWidth=2;ctx.strokeRect(mx1,y1*sy,mx2-mx1,(y2-y1)*sy);
+          ctx.fillStyle='rgba(232,255,71,.9)';
+          best.landmarks.forEach((pt,i)=>{if(i<2){ctx.beginPath();ctx.arc(cvs.width-(pt[0]*sx),pt[1]*sy,2.5,0,Math.PI*2);ctx.fill();}});
+        }
+      }else{confidence=0;present=false;cvs.getContext('2d').clearRect(0,0,cvs.width,cvs.height);}
+    }catch(e){present=fallbackDetect(vid,cvs);confidence=present?0.8:0;}
+  }else{present=fallbackDetect(vid,cvs);confidence=present?0.75:0;}
+  confHistory.push(confidence);if(confHistory.length>5)confHistory.shift();
+  faceScore=Math.round(confHistory.reduce((a,b)=>a+b,0)/confHistory.length*100);
+  $('gFill').style.width=faceScore+'%';$('gPct').textContent=faceScore+'%';
+  $('gFill').classList.toggle('low',!present);$('gPct').classList.toggle('low',!present);
+  $('gLbl').textContent=present?'● FACE FOUND':'○ NO FACE';$('gLbl').style.color=present?'var(--teal)':'var(--red)';
+  $('ring').classList.toggle('on',present);$('camThumb').className='cam-thumb '+(present?'ok':'bad');
+  setEye(present?'ok':'bad',present?'READING':'NO FACE');
+  if(present){missCount=0;hitCount=Math.min(hitCount+1,10);if(!playing&&pGaze&&hitCount>=2&&!pUser&&!pWin){pGaze=false;doPlay();}}
+  else{hitCount=0;missCount++;if(playing&&missCount>=4&&!pGaze){pGaze=true;doPause('LOOK AT THE SCREEN TO RESUME','👁');}}
+}
+function fallbackDetect(vid,cvs){
+  const ctx=cvs.getContext('2d',{willReadFrequently:true});ctx.drawImage(vid,0,0,cvs.width,cvs.height);
+  const W=cvs.width,H=cvs.height,zx=Math.floor(W*.2),zy=Math.floor(H*.05),zw=Math.floor(W*.6),zh=Math.floor(H*.7);
+  let data;try{data=ctx.getImageData(zx,zy,zw,zh).data;}catch(e){return false;}
+  let skin=0,total=0;
+  for(let i=0;i<data.length;i+=4*6){
     const r=data[i],g=data[i+1],b=data[i+2];
-    if(isSkin(r,g,b))skinPx++;
-    totalPx++;
+    const y=.299*r+.587*g+.114*b,cb=128-.168736*r-.331264*g+.5*b,cr=128+.5*r-.418688*g-.081312*b;
+    if(y>40&&cb>77&&cb<127&&cr>133&&cr<173)skin++;total++;
   }
-  const skinRatio=totalPx>0?skinPx/totalPx:0;
-
-  // ── Metric 2: Frame motion (eyes blinking/moving = motion present) ──
-  let motion=0;
-  if(prevFrame&&prevFrame.length===data.length){
-    let diff=0;
-    for(let i=0;i<data.length;i+=4*4){
-      diff+=Math.abs(data[i]-prevFrame[i]);
-      diff+=Math.abs(data[i+1]-prevFrame[i+1]);
-      diff+=Math.abs(data[i+2]-prevFrame[i+2]);
-    }
-    const avgDiff=diff/(data.length/4/4)/3;
-    // Some motion (2-40) = person is there; too much = moving away; too little = gone
-    motion=avgDiff>1.5&&avgDiff<60?Math.min(1,(avgDiff-1.5)/15):0;
-  }
-  prevFrame=new Uint8ClampedArray(data);
-
-  // ── Combine scores ──
-  // Skin presence is primary; motion boosts confidence
-  const skinScore=Math.min(1,skinRatio*6);
-  const combined=(skinScore*0.7)+(motion*0.3);
-
-  frameHistory.push(combined);
-  if(frameHistory.length>HIST)frameHistory.shift();
-  gazeScore=Math.round(frameHistory.reduce((a,b)=>a+b,0)/frameHistory.length*100);
-
-  const present=gazeScore>32;
-
-  // Draw detection box on thumbnail
-  ctx.strokeStyle=present?'rgba(71,255,232,.75)':'rgba(255,71,87,.65)';
-  ctx.lineWidth=1.5;
-  ctx.strokeRect(zx,zy,zw,zh);
-
-  // Draw small motion indicator
-  if(motion>0.1){
-    ctx.fillStyle='rgba(71,255,232,.5)';
-    ctx.fillRect(zx+zw-6,zy+2,4,4);
-  }
-
-  commitGaze(present);
+  const ratio=total>0?skin/total:0;
+  ctx.strokeStyle=ratio>.08?'rgba(71,255,232,.7)':'rgba(255,71,87,.6)';ctx.lineWidth=1.5;ctx.strokeRect(zx,zy,zw,zh);
+  return ratio>.08;
 }
-
-function isSkin(r,g,b){
-  if(r<70&&g<70&&b<70)return false;        // too dark
-  if(r>240&&g>240&&b>240)return false;      // too bright
-  if(Math.max(r,g,b)-Math.min(r,g,b)<12)return false; // too grey
-  if(r<=g||r<=b)return false;               // red must dominate
-  if(Math.abs(r-g)<12)return false;
-  return r>90&&g>40&&b>20&&(r-b)>15&&(r-g)>10;
-}
-
-function commitGaze(present){
-  // Update gaze bar
-  $('gFill').style.width=gazeScore+'%';
-  $('gPct').textContent=gazeScore+'%';
-  $('gFill').classList.toggle('low',!present);
-  $('gPct').classList.toggle('low',!present);
-  $('gLbl').textContent=present?'● LOOKING':'○ AWAY';
-  $('gLbl').style.color=present?'var(--teal)':'var(--red)';
-  $('ring').classList.toggle('on',present);
-  $('camThumb').className='cam-thumb '+(present?'ok':'bad');
-  setEye(present?'ok':'bad',present?'ON SCREEN':'LOOK AWAY');
-
-  // Pause / resume logic
-  if(playing&&!present){
-    missCount++;
-    if(missCount>=MISS&&!pGaze){pGaze=true;doPause('EYES AWAY — LOOK BACK TO RESUME','👁');}
-  }else if(!playing&&pGaze&&present&&!pUser&&!pWin){
-    missCount=0;pGaze=false;doPlay();
-  }else if(present){
-    missCount=0;
-  }
-}
-
-function setEye(state,label){
-  $('eyeDot').className='dot'+(state==='ok'?' ok':state==='bad'?' bad':'');
-  $('eyeLbl').textContent=label||'–';
-}
-
-/* ══ EPUB PARSER ══ */
+function setEye(s,l){$('eyeDot').className='dot'+(s==='ok'?' ok':s==='bad'?' bad':'');$('eyeLbl').textContent=l||'–';}
 async function handleEpub(file){
   showToast('📖 Reading book…');
-  try{
-    const text=await parseEpub(file);
-    const title=file.name.replace(/\.epub$/i,'');
-    saveToLib(title,text,'epub');
-    loadText(text,title);
-  }catch(e){
-    console.error(e);
-    showToast('⚠️ Could not read this EPUB');
-  }
+  try{const text=await parseEpub(file);const title=file.name.replace(/\.epub$/i,'');saveToLib(title,text,'epub');loadText(text,title);}
+  catch(e){showToast('⚠️ Could not read EPUB');console.error(e);}
 }
-
 async function parseEpub(file){
-  const zip=await JSZip.loadAsync(file);
-
-  // Find OPF path from container
-  let opfPath='';
-  const containerFile=zip.file('META-INF/container.xml');
-  if(containerFile){
-    const xml=await containerFile.async('text');
-    const m=xml.match(/full-path="([^"]+\.opf)"/i);
-    if(m)opfPath=m[1];
-  }
-  if(!opfPath){
-    const keys=Object.keys(zip.files);
-    opfPath=keys.find(k=>k.endsWith('.opf'))||'';
-  }
-
+  const zip=await JSZip.loadAsync(file);let opfPath='';
+  const cf=zip.file('META-INF/container.xml');
+  if(cf){const xml=await cf.async('text');const m=xml.match(/full-path="([^"]+\.opf)"/i);if(m)opfPath=m[1];}
+  if(!opfPath){const k=Object.keys(zip.files);opfPath=k.find(x=>x.endsWith('.opf'))||'';}
   let chapters=[];
   if(opfPath){
-    const opfDir=opfPath.includes('/')?opfPath.slice(0,opfPath.lastIndexOf('/')+1):'';
-    const opfXml=await zip.file(opfPath).async('text');
-
-    // Build manifest map
-    const manifest={};
-    for(const m of opfXml.matchAll(/<item[^>]+id="([^"]+)"[^>]+href="([^"]+)"/gi)){
-      manifest[m[1]]=m[2];
-    }
-    // Get spine order
-    const spine=[...opfXml.matchAll(/idref="([^"]+)"/gi)].map(m=>m[1]);
-
-    for(const id of spine){
-      const href=manifest[id];if(!href)continue;
-      const f=zip.file(opfDir+href)||zip.file(href);
-      if(f)chapters.push(htmlToText(await f.async('text')));
-    }
+    const dir=opfPath.includes('/')?opfPath.slice(0,opfPath.lastIndexOf('/')+1):'';
+    const opf=await zip.file(opfPath).async('text');const mf={};
+    for(const m of opf.matchAll(/<item[^>]+id="([^"]+)"[^>]+href="([^"]+)"/gi))mf[m[1]]=m[2];
+    const spine=[...opf.matchAll(/idref="([^"]+)"/gi)].map(m=>m[1]);
+    for(const id of spine){const href=mf[id];if(!href)continue;const f=zip.file(dir+href)||zip.file(href);if(f)chapters.push(h2t(await f.async('text')));}
   }
-
-  // Fallback: grab all HTML files
-  if(!chapters.length){
-    const htmlFiles=Object.keys(zip.files).filter(k=>/\.(html|xhtml|htm)$/i.test(k)&&!/toc|nav/i.test(k));
-    for(const p of htmlFiles.slice(0,60)){
-      chapters.push(htmlToText(await zip.file(p).async('text')));
-    }
-  }
-
-  const text=chapters.join('\n\n').trim();
-  if(text.length<50)throw new Error('No text found');
-  return text;
+  if(!chapters.length){const hf=Object.keys(zip.files).filter(k=>/\.(html|xhtml|htm)$/i.test(k)&&!/toc|nav/i.test(k));for(const p of hf.slice(0,60)){chapters.push(h2t(await zip.file(p).async('text')));}}
+  const text=chapters.join('\n\n').trim();if(text.length<50)throw new Error('No text');return text;
 }
-
-function htmlToText(html){
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi,'')
-    .replace(/<style[\s\S]*?<\/style>/gi,'')
-    .replace(/<br\s*\/?>/gi,' ')
-    .replace(/<\/p>/gi,' ')
-    .replace(/<[^>]+>/g,' ')
-    .replace(/&nbsp;/g,' ').replace(/&amp;/g,'&')
-    .replace(/&lt;/g,'<').replace(/&gt;/g,'>')
-    .replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n))
-    .replace(/\s+/g,' ').trim();
-}
-
-/* ══ FILE INPUTS ══ */
-function setupEpub(inputId){
-  $(inputId).addEventListener('change',async e=>{
-    const f=e.target.files[0];if(!f)return;
-    await handleEpub(f);
-    e.target.value='';
-  });
-}
-setupEpub('epubIn');
-setupEpub('epubIn2');
-setupEpub('kindleIn'); // kindle .epub fallback
-
-$('txtIn').addEventListener('change',e=>{
-  const f=e.target.files[0];if(!f)return;
-  const r=new FileReader();
-  r.onload=ev=>{
-    const title=f.name.replace(/\.(txt|md|text)$/i,'');
-    saveToLib(title,ev.target.result,'txt');
-    loadText(ev.target.result,title);
-  };
-  r.readAsText(f);
-  e.target.value='';
-});
-
-/* ══ LIBRARY ══ */
-function saveToLib(title,text,type){
-  const idx2=library.findIndex(b=>b.title===title);
-  const entry={title,text:text.slice(0,600000),type,date:Date.now(),words:text.trim().split(/\s+/).length};
-  if(idx2>=0)library[idx2]=entry;else library.unshift(entry);
-  if(library.length>25)library=library.slice(0,25);
-  try{localStorage.setItem('fr_lib',JSON.stringify(library));}catch(e){}
-  renderLib();
-}
-
-function renderLib(){
-  const wrap=$('libWrap');
-  wrap.querySelectorAll('.lib-item').forEach(el=>el.remove());
-  $('libEmpty').style.display=library.length?'none':'block';
-  library.forEach((book,i)=>{
-    const div=document.createElement('div');
-    div.className='lib-item';
-    const ico=book.type==='epub'?'📖':'📄';
-    div.innerHTML=`<div class="lib-ico">${ico}</div><div class="lib-info"><div class="lib-name">${book.title}</div><div class="lib-meta">${book.words.toLocaleString()} words · ${book.type.toUpperCase()}</div></div><button class="lib-del" title="Remove">✕</button>`;
-    div.addEventListener('click',e=>{if(!e.target.classList.contains('lib-del'))loadText(book.text,book.title);});
-    div.querySelector('.lib-del').addEventListener('click',e=>{e.stopPropagation();library.splice(i,1);try{localStorage.setItem('fr_lib',JSON.stringify(library));}catch(e){}renderLib();});
-    wrap.appendChild(div);
-  });
-}
-
-/* ══ PASTE ══ */
+function h2t(html){return html.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/<style[\s\S]*?<\/style>/gi,'').replace(/<br\s*\/?>/gi,' ').replace(/<\/p>/gi,' ').replace(/<[^>]+>/g,' ').replace(/&nbsp;/g,' ').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(+n)).replace(/\s+/g,' ').trim();}
+['epubIn','epubIn2','kindleIn'].forEach(id=>{$(id).addEventListener('change',async e=>{const f=e.target.files[0];if(!f)return;if(f.name.toLowerCase().endsWith('.epub'))await handleEpub(f);else{const r=new FileReader();r.onload=ev=>{const t=f.name.replace(/\.[^.]+$/,'');saveToLib(t,ev.target.result,'txt');loadText(ev.target.result,t);};r.readAsText(f);}e.target.value='';});});
+$('txtIn').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const t=f.name.replace(/\.[^.]+$/,'');saveToLib(t,ev.target.result,'txt');loadText(ev.target.result,t);};r.readAsText(f);e.target.value='';});
+let library=[];try{library=JSON.parse(localStorage.getItem('fr_lib')||'[]');}catch(e){}
+function saveToLib(title,text,type){const i=library.findIndex(b=>b.title===title);const entry={title,text:text.slice(0,600000),type,date:Date.now(),words:text.trim().split(/\s+/).length};if(i>=0)library[i]=entry;else library.unshift(entry);if(library.length>25)library=library.slice(0,25);try{localStorage.setItem('fr_lib',JSON.stringify(library));}catch(e){}renderLib();}
+function renderLib(){const w=$('libWrap');w.querySelectorAll('.lib-item').forEach(el=>el.remove());$('libEmpty').style.display=library.length?'none':'block';library.forEach((book,i)=>{const d=document.createElement('div');d.className='lib-item';d.innerHTML=`<div class="lib-ico">${book.type==='epub'?'📖':'📄'}</div><div class="lib-info"><div class="lib-name">${book.title}</div><div class="lib-meta">${book.words.toLocaleString()} words · ${book.type.toUpperCase()}</div></div><button class="lib-del">✕</button>`;d.addEventListener('click',e=>{if(!e.target.classList.contains('lib-del'))loadText(book.text,book.title);});d.querySelector('.lib-del').addEventListener('click',e=>{e.stopPropagation();library.splice(i,1);try{localStorage.setItem('fr_lib',JSON.stringify(library));}catch(e){}renderLib();});w.appendChild(d);});}
 $('pasteIn').addEventListener('input',()=>$('startBtn').disabled=$('pasteIn').value.trim().length<5);
 $('startBtn').addEventListener('click',()=>{if($('pasteIn').value.trim())loadText($('pasteIn').value,'Pasted Text');});
-
-/* ══ LOAD TEXT ══ */
-function loadText(raw,title=''){
-  words=raw.trim().split(/\s+/).filter(Boolean);
-  if(!words.length)return;
-  idx=0;playing=false;pUser=true;pGaze=false;pWin=false;
-  $('uploadWrap').style.display='none';
-  const rs=$('readerScreen');
-  rs.style.display='flex';rs.style.flexDirection='column';
-  $('sTot').textContent=words.length.toLocaleString();
-  showWord(0);$('bPlay').textContent='▶';$('pOv').classList.remove('show');
-  if(title)document.title=title+' · FlashRead';
-  showToast('✓ '+words.length.toLocaleString()+' words loaded');
-}
-
-$('backBtn').addEventListener('click',()=>{
-  stopTick();
-  $('readerScreen').style.display='none';
-  $('uploadWrap').style.display='block';
-  $('pasteIn').value='';$('startBtn').disabled=true;
-  document.title='FlashRead';
-});
-
-/* ══ ORP ══ */
-function orp(w){
-  const l=w.length,i=l<=1?0:l<=5?1:l<=9?2:3;
-  return[...w].map((c,j)=>{const s=c.replace(/&/g,'&amp;').replace(/</g,'&lt;');return j===i?`<span class="o">${s}</span>`:s;}).join('');
-}
-function showWord(i){
-  if(i<0||i>=words.length)return;
-  idx=i;
-  const el=$('wordEl');
-  el.innerHTML=orp(words[i]);
-  el.classList.remove('wa');void el.offsetWidth;el.classList.add('wa');
-  $('ctxP').textContent=i>0?words[i-1]:'';
-  $('ctxN').textContent=i<words.length-1?words[i+1]:'';
-  const p=words.length>1?Math.round(i/(words.length-1)*100):100;
-  $('progF').style.width=p+'%';$('sPct').textContent=p+'%';
-  $('sMin').textContent=((words.length-i)/wpm).toFixed(1);
-}
-
-/* ══ PLAYBACK ══ */
-function startTick(){
-  stopTick();
-  tickTimer=setInterval(()=>{
-    if(idx>=words.length-1){stopTick();playing=false;$('bPlay').textContent='▶';$('wordEl').innerHTML='<span class="o">✓</span>';showToast('🎉 Finished!');return;}
-    showWord(idx+1);
-  },Math.round(60000/wpm));
-}
+function loadText(raw,title=''){words=raw.trim().split(/\s+/).filter(Boolean);if(!words.length)return;idx=0;playing=false;pUser=true;pGaze=false;pWin=false;missCount=0;hitCount=0;$('uploadWrap').style.display='none';const rs=$('readerScreen');rs.style.display='flex';rs.style.flexDirection='column';$('sTot').textContent=words.length.toLocaleString();showWord(0);$('bPlay').textContent='▶';$('pOv').classList.remove('show');if(title)document.title=title+' · FlashRead';showToast('✓ '+words.length.toLocaleString()+' words loaded');}
+$('backBtn').addEventListener('click',()=>{stopTick();$('readerScreen').style.display='none';$('uploadWrap').style.display='block';$('pasteIn').value='';$('startBtn').disabled=true;document.title='FlashRead';});
+function orp(w){const l=w.length,i=l<=1?0:l<=5?1:l<=9?2:3;return[...w].map((c,j)=>{const s=c.replace(/&/g,'&amp;').replace(/</g,'&lt;');return j===i?`<span class="o">${s}</span>`:s;}).join('');}
+function showWord(i){if(i<0||i>=words.length)return;idx=i;const el=$('wordEl');el.innerHTML=orp(words[i]);el.classList.remove('wa');void el.offsetWidth;el.classList.add('wa');$('ctxP').textContent=i>0?words[i-1]:'';$('ctxN').textContent=i<words.length-1?words[i+1]:'';const p=words.length>1?Math.round(i/(words.length-1)*100):100;$('progF').style.width=p+'%';$('sPct').textContent=p+'%';$('sMin').textContent=((words.length-i)/wpm).toFixed(1);}
+function startTick(){stopTick();tickTimer=setInterval(()=>{if(idx>=words.length-1){stopTick();playing=false;$('bPlay').textContent='▶';$('wordEl').innerHTML='<span class="o">✓</span>';showToast('🎉 Finished!');return;}showWord(idx+1);},Math.round(60000/wpm));}
 function stopTick(){if(tickTimer){clearInterval(tickTimer);tickTimer=null;}}
-
-function doPlay(){
-  if(camLive&&gazeScore<32&&!pUser&&!pWin){pGaze=true;doPause('LOOK AT THE SCREEN TO BEGIN','👁');return;}
-  playing=true;pUser=false;$('bPlay').textContent='⏸';$('pOv').classList.remove('show');startTick();
-}
-function doPause(reason,ico){
-  playing=false;stopTick();$('bPlay').textContent='▶';
-  $('pRsn').textContent=reason||'PAUSED';$('pIco').textContent=ico||'⏸';$('pOv').classList.add('show');
-}
-
-$('bPlay').addEventListener('click',()=>{
-  if(playing){pUser=true;pGaze=false;doPause('PAUSED BY USER','⏸');}
-  else{pUser=false;if(camLive&&gazeScore<32){pGaze=true;doPause('LOOK AT THE SCREEN TO PLAY','👁');return;}pGaze=false;doPlay();}
-});
-
-document.addEventListener('visibilitychange',()=>{
-  if(document.hidden){if(playing){pWin=true;doPause('APP IN BACKGROUND','🪟');}}
-  else{if(pWin&&!pUser&&!pGaze){pWin=false;doPlay();}pWin=false;}
-});
-
-/* ══ SPEED ══ */
-function setWpm(v){
-  wpm=Math.min(1000,Math.max(100,v));
-  $('spdSlider').value=wpm;$('spdNum').innerHTML=`${wpm} <small>wpm</small>`;$('sWpm').textContent=wpm;
-  document.querySelectorAll('.pre').forEach(b=>b.classList.toggle('on',+b.dataset.w===wpm));
-  if(playing)startTick();
-}
+function doPlay(){if(camLive&&faceScore<50&&!pUser&&!pWin){pGaze=true;doPause('LOOK AT THE SCREEN TO START','👁');return;}playing=true;pUser=false;pGaze=false;$('bPlay').textContent='⏸';$('pOv').classList.remove('show');startTick();}
+function doPause(reason,ico){playing=false;stopTick();$('bPlay').textContent='▶';$('pRsn').textContent=reason||'PAUSED';$('pIco').textContent=ico||'⏸';$('pOv').classList.add('show');}
+$('bPlay').addEventListener('click',()=>{if(playing){pUser=true;pGaze=false;doPause('PAUSED BY USER','⏸');}else{pUser=false;if(camLive&&faceScore<50){pGaze=true;doPause('LOOK AT THE SCREEN TO START','👁');return;}pGaze=false;doPlay();}});
+document.addEventListener('visibilitychange',()=>{if(document.hidden){if(playing){pWin=true;doPause('APP IN BACKGROUND','🪟');}}else{if(pWin&&!pUser&&!pGaze){pWin=false;doPlay();}pWin=false;}});
+function setWpm(v){wpm=Math.min(1000,Math.max(100,v));$('spdSlider').value=wpm;$('spdNum').innerHTML=`${wpm} <small>wpm</small>`;$('sWpm').textContent=wpm;document.querySelectorAll('.pre').forEach(b=>b.classList.toggle('on',+b.dataset.w===wpm));if(playing)startTick();}
 $('spdSlider').addEventListener('input',()=>setWpm(+$('spdSlider').value));
 document.querySelectorAll('.pre').forEach(b=>b.addEventListener('click',()=>setWpm(+b.dataset.w)));
-$('bSlow').addEventListener('click',()=>setWpm(wpm-50));
-$('bFast').addEventListener('click',()=>setWpm(wpm+50));
+$('bSlow').addEventListener('click',()=>setWpm(wpm-50));$('bFast').addEventListener('click',()=>setWpm(wpm+50));
 $('bB10').addEventListener('click',()=>{showWord(Math.max(0,idx-10));if(playing)startTick();});
 $('bF10').addEventListener('click',()=>{showWord(Math.min(words.length-1,idx+10));if(playing)startTick();});
-
-/* ══ TOAST ══ */
 let toastT=null;
-function showToast(msg){
-  const t=$('toast');t.textContent=msg;t.classList.add('show');
-  if(toastT)clearTimeout(toastT);
-  toastT=setTimeout(()=>t.classList.remove('show'),2500);
-}
-
-/* ══ INSTALL ══ */
-if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone){
-  setTimeout(()=>$('installBanner').classList.add('show'),4000);
-}
+function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');if(toastT)clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('show'),2500);}
+if(/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.navigator.standalone){setTimeout(()=>$('installBanner').classList.add('show'),4000);}
 $('bannerClose').addEventListener('click',()=>$('installBanner').classList.remove('show'));
-
-/* ══ INIT ══ */
-renderLib();
+function toggleHowTo(id){$('howto-'+id).classList.toggle('open');}
+renderLib();boot();
 </script>
 </body>
 </html>
